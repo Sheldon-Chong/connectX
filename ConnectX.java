@@ -11,6 +11,10 @@ public class ConnectX {
   private int currRound;                          // Keep track of the current round
   private int numConnect;                         // The number of connected disc to win.
   
+  public final static int ERR_COLUMN_FULL    = -1;
+  public final static int ERR_INVALID_COLUMN = -2;
+  public final static int SUCCESS            = 1;
+
   //======================= CONSTRUCTOR =======================//
   /* Initialize the game's instance variables. */
   public ConnectX() {
@@ -55,8 +59,8 @@ public class ConnectX {
   
   /* Resets the grid so it contains no objects */
   public void ResetGrid() {
-    for (int y = 0; y < this.grid.length; y ++){
-      for (int x = 0; x < this.grid[y].length; x++){
+    for (int y = 0; y < this.grid.length; y ++) {
+      for (int x = 0; x < this.grid[y].length; x++) {
         this.grid[y][x] = null;
       }
     }
@@ -96,8 +100,8 @@ public class ConnectX {
    *           Returns false, if the grid is not full. */    
   public boolean IsGridFull() {
     boolean isFull = true;
-    for (int y = 0; y < this.grid.length; y ++){
-      for (int x = 0; x < this.grid[y].length; x++){
+    for (int y = 0; y < this.grid.length; y ++) {
+      for (int x = 0; x < this.grid[y].length; x++) {
         if (this.grid[y][x] == null){
           isFull = false;
           break;
@@ -120,12 +124,14 @@ public class ConnectX {
     if (col < 0 || col >= this.grid.length)
       return -2;
 
-    for (int y = this.grid.length - 1; y >= 0; y--){
-      if (this.grid[y][col] == null){
+    if (this.grid[0][col] != null)
+      return -1;
+    for (int y = this.grid.length - 1; y >= 0; y--) {
+      if (this.grid[y][col] == null) {
         this.grid[y][col] = new Disc(this.currPlayer.GetDiscType());
         return 1;
       }
-    }    
+    }
     return -1;
   }   
   
@@ -133,8 +139,8 @@ public class ConnectX {
    * @return - The number of empty blocks */
   public int NumAvailBlock() {
     int emptyBlocksCount = 0;
-    for (int y = 0; y < this.grid.length; y++){
-      for (int x = 0; x < this.grid[y].length; x++){
+    for (int y = 0; y < this.grid.length; y++) {
+      for (int x = 0; x < this.grid[y].length; x++) {
         if (this.grid[y][x] == null)
           emptyBlocksCount++;
       }
@@ -145,14 +151,41 @@ public class ConnectX {
   /* Get the current player's name (either X or O) as a char
    * @return - The player's name, either 'X' or 'O' */   
   public char GetCurrPlayerChar() {
-    return '';  // Dummy return value
+    if (this.currPlayer.GetDiscType() == Disc.O_DISC)
+      return 'O';
+    else
+      return 'X';
   }
+
   
+  private boolean checkLine( int posX, int posY, int incX, int incY ) {
+    /*
+    to make algo efficient:
+    1. 
+    */
+    int cursorX = posX;
+    int cursorY = posY;
+    
+    boolean found = true;
+    for (int i = 0; i < 4; i++) {
+      
+      Disc currentDisc = this.grid[cursorY][cursorX];
+
+      if ((currentDisc == null) ||
+          (currentDisc.GetDiscType() != Disc.O_DISC))
+        found = false;
+
+      cursorX += incX;
+      cursorY += incY;
+    }
+    return found;
+  }
+
   /* Check if there is a winner for the current round 
    * @return - Returns true, if there is a winner.
    *           Returns false, if there is no winner */      
   public boolean HasRoundWinner() {
-    return true;  // Dummy return value
+    return checkLine(0, this.grid.length - 1, 1,0);
   }
   
   /* Determine the final winner by checking the player's score. 

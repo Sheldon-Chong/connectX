@@ -23,33 +23,36 @@ public class ConnectXMain {
 
 		display.ScoreBoard(cx.GetAllPlayers()[0], cx.GetAllPlayers()[1]);
 		while(cx.GetCurrRound() < ConnectX.TOTAL_ROUNDS) {
-			display.ShowGrid(cx.GetGrid());  
 			
 			while(true) {
+				display.ShowGrid(cx.GetGrid());  
 				char disc_type;
 
-				if (cx.GetCurrPlayer().GetDiscType() == Disc.O_DISC)
-					disc_type = 'O';
-				else
-					disc_type = 'X';
-				
 				// prompt input
+				disc_type = cx.GetCurrPlayerChar();
 				int col;
-				while (true) {
+				int status;
+				while(true) {
 					System.out.printf("Player %c, Select column to insert (%d-%d): ", disc_type , 1, ConnectX.DEFAULT_WIDTH);
 					col = input.nextInt();
-					if (col >= 1 && col <= ConnectX.DEFAULT_WIDTH)
+					status = cx.Insert(col -1);
+					if (status == ConnectX.SUCCESS)
 						break;
-					System.out.println("Error: Invalid input");
+				   	else if (status == ConnectX.ERR_COLUMN_FULL)
+					   System.out.println("Error: Column is full");
+					else if (status == ConnectX.ERR_INVALID_COLUMN)
+						System.out.println("Error: Invalid column");
 				}
-			
-				cx.Insert(col -1);
+				
+				System.out.println("\n test::::: " + cx.NumAvailBlock());
 
-				if (cx.HasRoundWinner())
+				if (cx.HasRoundWinner()) {
+					System.out.println("TESTING");
 					break;
+				}
+				cx.SwitchPlayer();
 			}
 			display.ShowRound(cx.GetCurrRound());
-			cx.SwitchPlayer();
 		}
 		cx.NextRound();
 	}
