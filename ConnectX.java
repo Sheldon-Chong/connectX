@@ -13,12 +13,16 @@ public class ConnectX {
     
     public final static int ERR_COLUMN_FULL    = -1;
     public final static int ERR_INVALID_COLUMN = -2;
+    public final static int ERR_TIE            = 1;
     public final static int SUCCESS            = 1;
 
     private final static int NORTH = 1;
     private final static int SOUTH = -1;
     private final static int EAST = 1;
     private final static int WEST = -1;
+
+    private final static int PLAYER_O = 0;
+    private final static int PLAYER_X = 1;
 
     //======================= CONSTRUCTOR =======================//
     /* Initialize the game's instance variables. */
@@ -36,6 +40,7 @@ public class ConnectX {
     /* Initialize the game's instance variables. 
      * @param numConnect   - Number of connected disc to win. */
     public ConnectX(int numConnect) {
+        this();
         this.numConnect = numConnect;
     }
     
@@ -67,6 +72,19 @@ public class ConnectX {
         if (this.grid[y][x] == null)
             return -2;
         return this.grid[y][x].GetDiscType();
+    }
+
+    /* Get the player object that corresponds to the disc type
+     * @param discType - The type of disc that is being created (Either O or X)
+     * @return         - The player object that corresponds to the disc type
+     */
+    private Player getPlayer(int discType) {
+        if (this.allPlayers[0].GetDiscType() == discType)
+            // if the disc type is 0, then get the player at position 0
+            return this.allPlayers[0];
+        else
+            // if the disc type is 1, then get the player at position 1
+            return this.allPlayers[1];
     }
     
     /* Check if there is a line of connected disc in the specified direction
@@ -112,6 +130,27 @@ public class ConnectX {
         return true;
     }
 
+    /* Check in 8 directions if there is a line of connected disc
+     * @param x         - The x position in the grid
+     * @param y         - The y position in the grid
+     * @param checkDist - The amount of cells to check within the table for connected disc
+     * @return          - Returns true, if there is a line of connected disc.
+     */
+    private boolean checkAllDirections(int x, int y, int checkDist) {
+        // performs checkline in all 8 directions
+        return (
+            checkLine(x, y, 0,    NORTH, checkDist) || // North
+            checkLine(x, y, 0,    SOUTH, checkDist) || // South
+            checkLine(x, y, EAST, 0,     checkDist) || // East
+            checkLine(x, y, WEST, 0,     checkDist) || // West
+            
+            checkLine(x, y, EAST, NORTH, checkDist) || // North east
+            checkLine(x, y, WEST, NORTH, checkDist) || // North west
+            checkLine(x, y, EAST, SOUTH, checkDist) || // South east
+            checkLine(x, y, WEST, SOUTH, checkDist)    // South west
+        );
+    }
+
     //====================== PUBLIC METHOD =======================//
     /* Get the current round number. 
      * First round will be 1, second round will be 2, etc...
@@ -133,8 +172,12 @@ public class ConnectX {
     
     /* Resets the grid so it contains no objects */
     public void ResetGrid() {
+        // iterate for every row
         for (int y = 0; y < this.grid.length; y ++) {
+
+            // iterate for every column
             for (int x = 0; x < this.grid[y].length; x++) {
+                // set the current cell to empty
                 this.grid[y][x] = null;
             }
         }
@@ -164,26 +207,27 @@ public class ConnectX {
      * switches to O. If current player is O, then it switches to X) */   
     public void SwitchPlayer() {
         if (this.currPlayer.GetDiscType() == Disc.O_DISC)
-            this.currPlayer = this.allPlayers[1];
+            this.currPlayer = this.allPlayers[PLAYER_X];
         else
-            this.currPlayer = this.allPlayers[0];
+            this.currPlayer = this.allPlayers[PLAYER_O];
     }  
     
     /* Check if the grid is full (Every block has a disc object)
      * @return - Returns true, if the grid is full.
      *           Returns false, if the grid is not full. */    
     public boolean IsGridFull() {
-        boolean isFull = true;
-        for (int y = 0; y < this.grid.length; y ++) {
+        // Iterate for every row
+        for (int y = 0; y < this.grid.length; y++) {
+
+            // Iterate for every column
             for (int x = 0; x < this.grid[y].length; x++) {
-                if (this.grid[y][x] == null){
-                    isFull = false;
-                    break;
-                }
+                // if we encounter a cell that is empty, we can already assume that the grid is not full
+                if (this.grid[y][x] == null)
+                    return false;
             }
         }
-        return isFull;
-    }   
+        return true;
+    }
     
     /* Inserts a disc object in the specified column.
      * @param col - The column that the player wants to insert the disc
@@ -196,29 +240,40 @@ public class ConnectX {
     public int Insert(int col) {
 
         if (col < 0 || col > this.grid.length)
+            // if the specified column index is out of bounds
             return ERR_INVALID_COLUMN;
 
         if (this.grid[0][col] != null)
-            return -1;
+            // if the top cell is not empty, the column is full
+            return ERR_COLUMN_FULL;
+        
         for (int y = this.grid.length - 1; y >= 0; y--) {
             if (this.grid[y][col] == null) {
+                // if the cell is empty, insert the disc
                 this.grid[y][col] = new Disc(this.currPlayer.GetDiscType());
-                return 1;
+                return SUCCESS;
             }
         }
-        return -1;
+
+        return ERR_COLUMN_FULL;
     }   
     
     /* Get the number of available (empty) blocks in the grid
      * @return - The number of empty blocks */
     public int NumAvailBlock() {
         int emptyBlocksCount = 0;
+
+        // iterate for every row
         for (int y = 0; y < this.grid.length; y++) {
+            
+            // iterate for every column
             for (int x = 0; x < this.grid[y].length; x++) {
                 if (this.grid[y][x] == null)
+                    // add to block count if the cell is empty
                     emptyBlocksCount++;
             }
         }
+
         return emptyBlocksCount;
     }   
     
@@ -235,37 +290,33 @@ public class ConnectX {
      * @return - Returns true, if there is a winner.
      *           Returns false, if there is no winner */      
     public boolean HasRoundWinner() {
-        boolean line_found = false;
-        int     checkDist  = 3;
-        int     posY       = this.grid.length - 1;
-
-        for (int y = 0; y < this.grid.length; y++) {
-            for (int x = 0; x < this.grid[y].length; x++) {
-                // check for a line in 8 directions
-                line_found = (
-                checkLine(x, y,  0,    NORTH, checkDist) || // North
-                checkLine(x, y,  0,    SOUTH, checkDist) || // South
-                checkLine(x, y,  EAST,     0, checkDist) || // East
-                checkLine(x, y,  WEST,     0, checkDist) || // West
+        int checkDist = this.numConnect;
     
-                checkLine(x, y,  EAST, NORTH, checkDist) || // North east
-                checkLine(x, y,  WEST, NORTH, checkDist) || // North west
-                checkLine(x, y,  EAST, SOUTH, checkDist) || // South east
-                checkLine(x, y,  WEST, SOUTH, checkDist)    // South west
-                );
-                if (line_found)
-                    break;
+        // Iterate for every row
+        for (int y = 0; y < this.grid.length; y++) {
+            
+            // Iterate for every column
+            for (int x = 0; x < this.grid[y].length; x++) {
+                if (checkAllDirections(x, y, checkDist))
+                    // if there is a line of connected disc
+                    return true;
             }
         }
-
-        
-        return line_found;
-    }
     
+        return false;
+    }
+
     /* Determine the final winner by checking the player's score. 
      * @return - Returns the array position value that represents the player who wins.
      *           Returns -3,if there's a tie (same score) */
     public int HasGameWinner() {
-        return 1;
+        if (getPlayer(PLAYER_O).GetScore() > this.allPlayers[PLAYER_X].GetScore())
+            // if player O has more points
+            return PLAYER_O;
+        else if (getPlayer(PLAYER_O).GetScore() < this.allPlayers[PLAYER_X].GetScore())
+            // if player X has more points
+            return PLAYER_X;
+        else
+            return ERR_TIE;
     }  
 }
