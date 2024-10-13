@@ -35,7 +35,6 @@ public class Displayer {
    * @param grid - The 2D array that contains Disc objects */
   public void ShowGrid(Disc[][] grid) {
     String indent = "    ";
-    ShowRound(1);
     String rowDiv = "-----------------------------";
     for(int y =0; y < grid.length; y ++) {
       System.out.println(indent+ rowDiv);

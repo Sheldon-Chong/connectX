@@ -19,11 +19,13 @@ public class ConnectXMain {
 			System.out.print("Invalid input. Please enter a number between 2 and 6: ");
 		}
 
-		cx.SetCurrPlayer(0);
-
+		
 		display.ScoreBoard(cx.GetAllPlayers()[0], cx.GetAllPlayers()[1]);
 		while(cx.GetCurrRound() < ConnectX.TOTAL_ROUNDS) {
+			display.ShowRound(cx.GetCurrRound());
+			cx.SetCurrPlayer(0);
 			
+			cx.ResetGrid();
 			while(true) {
 				display.ShowGrid(cx.GetGrid());  
 				char disc_type;
@@ -44,16 +46,27 @@ public class ConnectXMain {
 						System.out.println("Error: Invalid column");
 				}
 				
-				System.out.println("\n test::::: " + cx.NumAvailBlock());
-
 				if (cx.HasRoundWinner()) {
-					System.out.println("TESTING");
+					display.ShowGrid(cx.GetGrid());
+
+					System.out.printf("Round %d winner is player %c\n", cx.GetCurrRound(), disc_type);
+					System.out.printf("%d will get %d points\n", cx.GetCurrRound(), numConnect);
+					
+					System.out.print("Click Enter to continue to next round.\n");
+
+					// clear buffer
+					input.nextLine();
+
+					// wait for user to press enter
+					input.nextLine();
+
+					// proceed to the next round
+					cx.NextRound();
 					break;
 				}
 				cx.SwitchPlayer();
 			}
-			display.ShowRound(cx.GetCurrRound());
+			
 		}
-		cx.NextRound();
 	}
 }
